@@ -1,4 +1,4 @@
-# Tutamail Repository
+# Tutamail Manager
 
 Tutamail 是一个面向 Tuta/Tutamail 的本地 Web 控制台，包含：
 
