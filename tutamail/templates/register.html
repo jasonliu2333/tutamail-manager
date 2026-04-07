@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutamail 注册中心</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="topbar">
+            <div>
+                <div class="kicker">Tutamail</div>
+                <h1>注册中心</h1>
+            </div>
+            <nav class="topnav">
+                <a class="active" href="/register">注册中心</a>
+                <a href="/mail">邮件管理</a>
+                <a href="/settings">设置</a>
+                <a href="/logout">退出</a>
+            </nav>
+        </header>
+        <main class="page-grid two-column">
+            <section class="card sticky-card">
+                <div class="card-header"><h2>注册设置</h2></div>
+                <div class="card-body">
+                    <form id="register-form" class="stack-md">
+                        <label class="field"><span>域名</span><select id="mail-domain"></select></label>
+                        <label class="field"><span>注册数量</span><input type="number" id="batch-count" min="1" max="50" value="1"></label>
+                        <label class="field"><span>并发数</span><input type="number" id="max-workers" min="1" max="10" value="1"></label>
+                        <label class="field"><span>入库分组</span><select id="group-id"></select></label>
+                        <label class="field"><span>代理配置</span><select id="proxy-profile-id"></select></label>
+                        <label class="field">
+                            <span>识别模型链</span>
+                            <div id="model-checkboxes" class="checkbox-list"></div>
+                            <small>按设置页中的优先级顺序 fallback。</small>
+                        </label>
+                        <div class="action-row stretch">
+                            <button type="submit" class="btn primary wide" id="start-register-btn">开始注册</button>
+                            <button type="button" class="btn secondary wide" id="cancel-register-btn" disabled>取消任务</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+            <section class="stack-lg">
+                <section class="card">
+                    <div class="card-header between">
+                        <h2>监控台</h2>
+                        <div class="action-row compact">
+                            <span class="badge pending hidden" id="task-status-badge">等待中</span>
+                            <button class="btn ghost small" id="clear-log-btn">清空</button>
+                        </div>
+                    </div>
+                    <div class="card-body no-pad">
+                        <div class="task-status-grid hidden" id="task-status-grid">
+                            <div><span>任务 ID</span><strong id="task-id">-</strong></div>
+                            <div><span>状态</span><strong id="task-status">-</strong></div>
+                            <div><span>成功</span><strong id="task-success">0</strong></div>
+                            <div><span>失败</span><strong id="task-failed">0</strong></div>
+                        </div>
+                        <div class="progress-block hidden" id="progress-block">
+                            <div class="between muted"><span id="progress-text">0 / 0</span><span id="progress-percent">0%</span></div>
+                            <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+                        </div>
+                        <div class="console-log" id="console-log"><div class="log-line info">[系统] 准备就绪，等待开始注册...</div></div>
+                    </div>
+                </section>
+                <section class="card">
+                    <div class="card-header between">
+                        <h2>最近入库账号</h2>
+                        <button class="btn ghost small" id="refresh-register-accounts">刷新</button>
+                    </div>
+                    <div class="card-body no-pad">
+                        <table class="data-table">
+                            <thead><tr><th>ID</th><th>邮箱</th><th>分组</th><th>状态</th></tr></thead>
+                            <tbody id="recent-register-accounts"></tbody>
+                        </table>
+                    </div>
+                </section>
+            </section>
+        </main>
+    </div>
+    <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/register.js') }}"></script>
+</body>
+</html>

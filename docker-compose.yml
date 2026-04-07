@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  tutamail:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: tutamail:latest
+    container_name: tutamail
+    ports:
+      - "${TUTAMAIL_EXPOSE_PORT:-5100}:${TUTAMAIL_PORT:-5100}"
+    environment:
+      TUTAMAIL_HOST: "${TUTAMAIL_HOST:-0.0.0.0}"
+      TUTAMAIL_PORT: "${TUTAMAIL_PORT:-5100}"
+      TUTAMAIL_THREADS: "${TUTAMAIL_THREADS:-8}"
+      TUTAMAIL_SECRET_KEY: "${TUTAMAIL_SECRET_KEY:-replace-with-long-random-secret}"
+      TUTAMAIL_INITIAL_PASSWORD: "${TUTAMAIL_INITIAL_PASSWORD:-replace-with-strong-password}"
+    volumes:
+      - ./tutamail/data:/app/tutamail/data
+      - ./tutamail/logs:/app/tutamail/logs
+      - ./captchas:/app/captchas
+    restart: unless-stopped

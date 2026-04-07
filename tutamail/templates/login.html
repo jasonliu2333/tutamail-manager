@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutamail 登录</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="auth-body">
+    <div class="auth-shell">
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="kicker">Tuta 控制台</div>
+                <h1>登录 Tutamail</h1>
+                <p>首次启动请使用环境变量 `TUTAMAIL_INITIAL_PASSWORD` 指定的密码，或查看 `tutamail/data/initial_admin_password.txt`。</p>
+            </div>
+            <div class="alert error hidden" id="login-error"></div>
+            <form id="login-form" class="stack-md">
+                <label class="field">
+                    <span>登录密码</span>
+                    <input type="password" id="password" placeholder="请输入登录密码" required>
+                </label>
+                <button type="submit" class="btn primary wide" id="login-btn">进入系统</button>
+            </form>
+        </div>
+    </div>
+    <script>
+        const form = document.getElementById('login-form');
+        const errorBox = document.getElementById('login-error');
+        const loginBtn = document.getElementById('login-btn');
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            loginBtn.disabled = true;
+            loginBtn.textContent = '登录中...';
+            errorBox.classList.add('hidden');
+            const response = await fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ password: document.getElementById('password').value })
+            });
+            const data = await response.json();
+            if (data.success) {
+                location.href = '/register';
+                return;
+            }
+            errorBox.textContent = data.error || '登录失败';
+            errorBox.classList.remove('hidden');
+            loginBtn.disabled = false;
+            loginBtn.textContent = '进入系统';
+        });
+    </script>
+</body>
+</html>
