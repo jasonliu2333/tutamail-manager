@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutamail 邮件管理</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-shell mail-shell">
+        <header class="topbar compact-header">
+            <div>
+                <div class="kicker">Tutamail</div>
+                <h1>邮件管理</h1>
+            </div>
+            <nav class="topnav">
+                <a href="/register">注册中心</a>
+                <a class="active" href="/mail">邮件管理</a>
+                <a href="/settings">设置</a>
+                <a href="/logout">退出</a>
+            </nav>
+        </header>
+        <main class="mail-layout">
+            <aside class="group-panel" id="groupPanel">
+                <div class="panel-header">
+                    <span class="panel-title">分组</span>
+                    <button class="panel-action-btn" id="add-group-btn" title="添加分组">+</button>
+                </div>
+                <div class="group-list panel-body" id="group-list"></div>
+            </aside>
+            <aside class="account-panel" id="accountPanel">
+                <div class="account-panel-header">
+                    <div class="account-panel-title">
+                        <span class="group-color-indicator" id="current-group-color"></span>
+                        <span id="current-group-name">选择分组</span>
+                    </div>
+                    <div class="account-panel-header-actions">
+                        <button class="panel-action-btn" id="export-account-btn" title="导出邮箱">⇩</button>
+                        <button class="panel-action-btn" id="import-account-btn" title="导入邮箱">+</button>
+                    </div>
+                </div>
+                <div class="search-container">
+                    <input type="search" id="account-search" class="search-input" placeholder="搜索邮箱地址..." autocomplete="off">
+                </div>
+                <div class="account-summary-row" id="account-summary-row">
+                    <button class="account-summary-chip ok" data-summary-filter="ok">正常 <strong id="summary-ok-count">0</strong></button>
+                    <button class="account-summary-chip revoked" data-summary-filter="account_exists_but_login_revoked">禁登 <strong id="summary-revoked-count">0</strong></button>
+                    <button class="account-summary-chip issue" data-summary-filter="issue">异常 <strong id="summary-issue-count">0</strong></button>
+                    <button class="account-summary-chip disabled" data-summary-filter="disabled">停用 <strong id="summary-disabled-count">0</strong></button>
+                </div>
+                <div class="account-filter-row">
+                    <label class="account-filter-label" for="account-status-filter">状态：</label>
+                    <select id="account-status-filter">
+                        <option value="all">全部状态</option>
+                        <option value="issue">仅异常</option>
+                        <option value="ok">正常</option>
+                        <option value="account_exists_but_login_revoked">账号存在但已禁登</option>
+                        <option value="not_authenticated">未认证</option>
+                        <option value="session_expired">会话过期</option>
+                        <option value="access_deactivated">访问已停用</option>
+                        <option value="access_blocked">访问已封锁</option>
+                        <option value="access_expired">访问已过期</option>
+                        <option value="not_found">账号不存在</option>
+                        <option value="network_error">网络异常</option>
+                        <option value="too_many_requests">请求过多</option>
+                        <option value="internal_server_error">服务端异常</option>
+                        <option value="service_unavailable">服务不可用</option>
+                        <option value="unknown">待检查</option>
+                        <option value="disabled">已停用</option>
+                    </select>
+                </div>
+                <div class="account-quick-row">
+                    <button class="utility-btn compact" id="toggle-revoked-filter-btn">仅看禁登</button>
+                    <button class="utility-btn compact" id="export-filtered-accounts-btn">导出当前筛选</button>
+                </div>
+                <div class="account-utility-row">
+                    <div class="account-utility-grid">
+                        <button class="utility-btn active" id="select-all-accounts-btn">选中筛选</button>
+                        <button class="utility-btn" id="refresh-group-mails-btn">取本组</button>
+                        <button class="utility-btn" id="refresh-all-mails-btn">取全部</button>
+                    </div>
+                </div>
+                <div class="account-utility-row secondary">
+                    <div class="account-utility-grid">
+                        <button class="utility-btn" id="add-account-btn">新增</button>
+                        <button class="utility-btn" id="import-account-btn-secondary">导入</button>
+                        <button class="utility-btn" id="export-account-btn-secondary">导出</button>
+                    </div>
+                </div>
+                <div class="account-list panel-body" id="account-list"></div>
+                <div class="batch-action-bar hidden" id="account-batch-bar">
+                    <span class="batch-action-count" id="selected-account-count">已选 0 项</span>
+                    <div class="batch-action-spacer"></div>
+                    <button class="utility-btn compact" id="clear-account-selection-btn">清空</button>
+                    <button class="utility-btn compact" id="refresh-selected-status-btn">刷新状态</button>
+                    <button class="utility-btn compact" id="refresh-selected-mails-btn">复检已选</button>
+                    <button class="utility-btn compact danger" id="batch-delete-accounts-btn">删除选中</button>
+                </div>
+                <div class="account-panel-footer">
+                    <button class="add-account-btn" id="account-footer-import-btn">+ 导入邮箱</button>
+                </div>
+            </aside>
+            <section class="mail-panel list-panel">
+                <div class="current-account" id="current-account-banner" title="点击复制邮箱地址">
+                    当前邮箱：<strong id="current-account-copy-email"></strong>
+                </div>
+                <div class="email-list-header">
+                    <div class="email-list-header-top">
+                        <div class="mail-cache-inline" id="mail-cache-label">尚未获取</div>
+                        <div class="email-header-actions">
+                            <button class="refresh-btn" id="refresh-mails-btn">获取邮件</button>
+                            <button class="refresh-btn" id="load-more-mails-btn">加载更多</button>
+                        </div>
+                    </div>
+                    <div class="email-list-header-bottom">
+                        <h2>邮件 <span class="email-count" id="mail-count-label"></span></h2>
+                        <span class="method-tag" id="mail-method-label">-</span>
+                    </div>
+                </div>
+                <div class="panel-body" id="mail-list"></div>
+            </section>
+            <section class="mail-panel detail-panel">
+                <div class="panel-header between"><h2>邮件详情</h2><span class="muted small" id="mail-method-label">-</span></div>
+                <div class="detail-wrap" id="mail-detail"><div class="empty-state">请选择一封邮件查看正文。</div></div>
+            </section>
+        </main>
+    </div>
+
+    <div class="modal" id="account-import-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>账号批量导入</h3>
+                <button class="modal-close" data-close-modal="account-import-modal">&times;</button>
+            </div>
+            <div class="modal-body stack-md">
+                <label class="field">
+                    <span>选择分组</span>
+                    <select id="import-group-select"></select>
+                </label>
+                <div class="import-info">
+                    <p><strong>支持格式</strong></p>
+                    <ul>
+                        <li><code>邮箱----密码</code></li>
+                        <li><code>邮箱----密码----client_id</code></li>
+                        <li><code>邮箱----密码----client_id----access_token</code></li>
+                        <li><code>邮箱----密码----client_id----access_token----user_id</code></li>
+                    </ul>
+                    <p>每行一个账号，使用四个连字符分隔。导入方法对齐 `outlookEmail-main`，但字段保留 Tuta 所需最小集合。</p>
+                </div>
+                <label class="field">
+                    <span>批量导入数据</span>
+                    <textarea id="account-import-data" class="textarea-mono" rows="10" placeholder="demo@tutanota.de----Password123&#10;demo2@tutanota.de----Password456----client_id----access_token"></textarea>
+                </label>
+                <div class="service-hint" id="account-import-hint">格式：邮箱----密码----client_id----access_token----user_id，后两项可选。</div>
+                <div id="account-import-result" class="hidden"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" id="clear-account-import-btn">清空</button>
+                <button class="btn primary" id="submit-account-import-btn">开始导入</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="account-form-modal">
+        <div class="modal-content narrow">
+            <div class="modal-header">
+                <h3 id="account-form-title">新增账号</h3>
+                <button class="modal-close" data-close-modal="account-form-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="account-form" class="stack-md">
+                    <input type="hidden" id="account-form-id">
+                    <div class="form-row">
+                        <label class="field"><span>邮箱</span><input type="email" id="account-email" required></label>
+                        <label class="field"><span>密码</span><input type="text" id="account-password" required></label>
+                    </div>
+                    <div class="form-row">
+                        <label class="field"><span>client_id</span><input type="text" id="account-client-id" placeholder="可留空"></label>
+                        <label class="field"><span>分组</span><select id="account-group-id"></select></label>
+                    </div>
+                    <div class="form-row">
+                        <label class="field"><span>access_token</span><textarea id="account-access-token" rows="4" placeholder="可留空，登录成功后会自动刷新"></textarea></label>
+                        <label class="field"><span>user_id</span><input type="text" id="account-user-id" placeholder="可留空"></label>
+                    </div>
+                    <div class="form-row">
+                        <label class="field"><span>状态</span><select id="account-status"><option value="active">active</option><option value="disabled">disabled</option></select></label>
+                        <label class="field"><span>取件状态</span><input type="text" id="account-fetch-status" readonly placeholder="待检查"></label>
+                    </div>
+                    <div class="form-row">
+                        <label class="field"><span>备注</span><input type="text" id="account-remark" placeholder="例如：Web 自动注册"></label>
+                    </div>
+                    <label class="field"><span>最后错误</span><textarea id="account-last-error" rows="4" readonly placeholder="暂无错误"></textarea></label>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn danger hidden" id="delete-account-from-modal-btn">删除</button>
+                <button class="btn secondary" data-close-modal="account-form-modal">取消</button>
+                <button class="btn primary" id="save-account-btn">保存账号</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="account-export-modal">
+        <div class="modal-content narrow">
+            <div class="modal-header">
+                <h3>导出邮箱</h3>
+                <button class="modal-close" data-close-modal="account-export-modal">&times;</button>
+            </div>
+            <div class="modal-body stack-md">
+                <div class="field">
+                    <span>选择要导出的分组</span>
+                    <div class="export-group-list" id="export-group-list"></div>
+                </div>
+                <label class="field">
+                    <span>导出内容</span>
+                    <select id="export-mode">
+                        <option value="minimal">最小导出（txt）</option>
+                        <option value="full">完整导出（jsonl）</option>
+                    </select>
+                </label>
+                <label class="checkbox-item export-select-all">
+                    <input type="checkbox" id="export-select-all-groups">
+                    <div><strong>全选</strong><small>勾选当前所有分组</small></div>
+                </label>
+                <div class="service-hint">
+                    最小导出：`邮箱----密码----client_id----access_token----user_id`
+                    <br>
+                    完整导出：额外包含注册过程完整记录，如 `salt_b64`、`recover_code_hex`、`system_keys`、`session_raw`
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" data-close-modal="account-export-modal">取消</button>
+                <button class="btn primary" id="confirm-export-groups-btn">继续</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="account-export-verify-modal">
+        <div class="modal-content narrow">
+            <div class="modal-header">
+                <h3>安全验证</h3>
+                <button class="modal-close" data-close-modal="account-export-verify-modal">&times;</button>
+            </div>
+            <div class="modal-body stack-md">
+                <label class="field">
+                    <span>登录密码</span>
+                    <input type="password" id="export-verify-password" placeholder="输入当前登录密码">
+                </label>
+                <div class="service-hint">仅验证通过后才会生成导出文件，验证令牌 5 分钟内一次有效。</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" data-close-modal="account-export-verify-modal">取消</button>
+                <button class="btn primary" id="submit-export-btn">确认导出</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="group-form-modal">
+        <div class="modal-content narrow">
+            <div class="modal-header">
+                <h3 id="group-form-title">新建分组</h3>
+                <button class="modal-close" data-close-modal="group-form-modal">&times;</button>
+            </div>
+            <div class="modal-body outlook-modal-body">
+                <form id="group-form" class="outlook-form">
+                    <input type="hidden" id="group-form-id">
+                    <div class="form-group">
+                        <label class="form-label" for="group-name">分组名称</label>
+                        <input type="text" class="form-input" id="group-name" placeholder="输入分组名称" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="group-description">分组描述</label>
+                        <input type="text" class="form-input" id="group-description" placeholder="可选">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">分组颜色</label>
+                        <div class="color-picker-group" id="group-color-picker">
+                            <button type="button" class="color-option selected" style="background-color:#1a1a1a" data-color="#1a1a1a"></button>
+                            <button type="button" class="color-option" style="background-color:#666666" data-color="#666666"></button>
+                            <button type="button" class="color-option" style="background-color:#0078d4" data-color="#0078d4"></button>
+                            <button type="button" class="color-option" style="background-color:#107c10" data-color="#107c10"></button>
+                            <button type="button" class="color-option" style="background-color:#ff8c00" data-color="#ff8c00"></button>
+                            <button type="button" class="color-option" style="background-color:#e81123" data-color="#e81123"></button>
+                            <button type="button" class="color-option" style="background-color:#5c2d91" data-color="#5c2d91"></button>
+                            <button type="button" class="color-option" style="background-color:#008272" data-color="#008272"></button>
+                            <button type="button" class="color-option" style="background-color:#00bcf2" data-color="#00bcf2"></button>
+                            <button type="button" class="color-option" style="background-color:#bad80a" data-color="#bad80a"></button>
+                            <button type="button" class="color-option" style="background-color:#ff6f61" data-color="#ff6f61"></button>
+                            <button type="button" class="color-option" style="background-color:#744da9" data-color="#744da9"></button>
+                        </div>
+                        <div class="custom-color-row">
+                            <input type="color" class="custom-color-input" id="group-custom-color-input" value="#1a1a1a">
+                            <span class="custom-color-label">自定义颜色</span>
+                            <input type="text" class="custom-color-hex" id="group-color" placeholder="#000000" maxlength="7" value="#1a1a1a">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" for="group-proxy-profile-id">取件代理</label>
+                        <select class="form-select" id="group-proxy-profile-id"></select>
+                        <div class="form-hint">可选，设置后该分组下所有邮箱获取邮件时走此代理。</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer outlook-modal-footer">
+                <button class="btn secondary modal-action-btn" data-close-modal="group-form-modal">取消</button>
+                <button class="btn primary modal-action-btn" id="save-group-btn">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="mail-refresh-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="mail-refresh-modal-title">批量获取邮件</h3>
+                <button class="modal-close" data-close-modal="mail-refresh-modal">&times;</button>
+            </div>
+            <div class="modal-body stack-md">
+                <div class="mail-refresh-summary">
+                    <div class="mail-refresh-stat">
+                        <span>状态</span>
+                        <strong id="mail-refresh-status">未开始</strong>
+                    </div>
+                    <div class="mail-refresh-stat">
+                        <span>进度</span>
+                        <strong id="mail-refresh-progress-text">0 / 0</strong>
+                    </div>
+                    <div class="mail-refresh-stat">
+                        <span>结果</span>
+                        <strong id="mail-refresh-result-text">成功 0 · 失败 0</strong>
+                    </div>
+                </div>
+                <div class="mail-refresh-progress">
+                    <div class="mail-refresh-progress-bar" id="mail-refresh-progress-bar"></div>
+                </div>
+                <div class="mail-refresh-result-list" id="mail-refresh-result-list">
+                    <div class="empty-state">任务启动后，这里会显示成功/失败明细。</div>
+                </div>
+                <div class="mail-refresh-log-wrap">
+                    <div class="mail-refresh-log-title">实时日志</div>
+                    <div class="mail-refresh-log-list" id="mail-refresh-log-list">
+                        <div class="empty-state">等待任务开始...</div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn danger" id="cancel-mail-refresh-btn">取消任务</button>
+                <button class="btn secondary" data-close-modal="mail-refresh-modal">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/mail.js') }}"></script>
+</body>
+</html>

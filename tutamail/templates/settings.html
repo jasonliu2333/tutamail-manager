@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tutamail 设置</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="topbar">
+            <div>
+                <div class="kicker">Tutamail</div>
+                <h1>系统设置</h1>
+            </div>
+            <nav class="topnav">
+                <a href="/register">注册中心</a>
+                <a href="/mail">邮件管理</a>
+                <a class="active" href="/settings">设置</a>
+                <a href="/logout">退出</a>
+            </nav>
+        </header>
+        <main class="page-grid settings-grid">
+            <section class="card full-width hidden" id="settings-error-panel">
+                <div class="card-header between">
+                    <h2>前端错误日志</h2>
+                    <button class="btn ghost small" id="clear-settings-errors-btn">清空</button>
+                </div>
+                <div class="card-body stack-md">
+                    <div class="settings-error-summary" id="settings-error-summary">当前没有前端错误。</div>
+                    <div class="settings-error-list" id="settings-error-list"></div>
+                </div>
+            </section>
+            <section class="card">
+                <div class="card-header"><h2>基础设置</h2></div>
+                <div class="card-body stack-md">
+                    <label class="field"><span>对外 API Key</span><input type="text" id="external-api-key" placeholder="用于 /api/external/emails"></label>
+                    <label class="field"><span>修改登录密码</span><input type="password" id="login-password" placeholder="至少 8 位，不填则不修改"></label>
+                    <button class="btn primary" id="save-basic-settings">保存基础设置</button>
+                </div>
+            </section>
+            <section class="card full-width">
+                <div class="card-header between">
+                    <h2>验证码识别配置</h2>
+                    <div class="action-row compact">
+                        <button class="btn ghost small" id="reset-captcha-settings-btn">恢复默认</button>
+                        <button class="btn primary small" id="save-captcha-settings">保存配置</button>
+                    </div>
+                </div>
+                <div class="card-body stack-lg">
+                    <div class="service-hint">这里可配置验证码缩放、OpenCV 检测参数和提交给识别模型的提示词。默认值就是当前稳定配置，可随时一键还原。</div>
+                    <div class="settings-subgrid three-columns">
+                        <label class="field"><span>最大尝试次数</span><input type="number" id="captcha-max-attempts" min="1" max="20"></label>
+                        <label class="field"><span>启用缩放</span><select id="vision-resize-enabled"><option value="1">启用</option><option value="0">停用</option></select></label>
+                        <label class="field"><span>裁剪模式</span><select id="vision-crop-mode"><option value="auto">auto</option><option value="full">full</option></select></label>
+                        <label class="field"><span>最大边长</span><input type="number" id="vision-resize-max" min="0"></label>
+                        <label class="field"><span>目标宽度</span><input type="number" id="vision-resize-width" min="0"></label>
+                        <label class="field"><span>目标高度</span><input type="number" id="vision-resize-height" min="0"></label>
+                        <label class="field"><span>参考图路径</span><input type="text" id="vision-resize-ref" placeholder="可选"></label>
+                        <label class="field"><span>保存缩略图</span><select id="vision-save-thumbs"><option value="1">启用</option><option value="0">停用</option></select></label>
+                        <label class="field"><span>缩略图目录</span><input type="text" id="vision-thumb-dir"></label>
+                    </div>
+                    <div class="settings-subgrid three-columns">
+                        <label class="field"><span>高斯核大小</span><input type="number" id="vision-blur-kernel" min="1"></label>
+                        <label class="field"><span>Canny 阈值 1</span><input type="number" id="vision-canny-threshold1" step="0.1"></label>
+                        <label class="field"><span>Canny 阈值 2</span><input type="number" id="vision-canny-threshold2" step="0.1"></label>
+                        <label class="field"><span>膨胀次数</span><input type="number" id="vision-dilate-iterations" min="0"></label>
+                        <label class="field"><span>腐蚀次数</span><input type="number" id="vision-erode-iterations" min="0"></label>
+                        <label class="field"><span>Hough dp</span><input type="number" id="vision-hough-dp" step="0.1"></label>
+                        <label class="field"><span>Hough minDist</span><input type="number" id="vision-hough-min-dist" min="1"></label>
+                        <label class="field"><span>Hough param1</span><input type="number" id="vision-hough-param1" step="0.1"></label>
+                        <label class="field"><span>Hough param2</span><input type="number" id="vision-hough-param2" step="0.1"></label>
+                        <label class="field"><span>最小半径比例</span><input type="number" id="vision-hough-min-radius-ratio" step="0.01"></label>
+                        <label class="field"><span>最大半径比例</span><input type="number" id="vision-hough-max-radius-ratio" step="0.01"></label>
+                        <label class="field"><span>线段阈值</span><input type="number" id="vision-hough-lines-threshold" min="1"></label>
+                        <label class="field"><span>最小线长比例</span><input type="number" id="vision-min-line-length-ratio" step="0.01"></label>
+                        <label class="field"><span>最大线段间隔</span><input type="number" id="vision-max-line-gap" min="1"></label>
+                        <label class="field"><span>双指针裁剪边距比例</span><input type="number" id="vision-crop-margin-pair-ratio" step="0.01"></label>
+                        <label class="field"><span>整圆裁剪边距比例</span><input type="number" id="vision-crop-margin-full-ratio" step="0.01"></label>
+                    </div>
+                    <div class="settings-subgrid two-columns">
+                        <label class="field"><span>昼夜识别 System Prompt</span><textarea id="vision-day-night-system-prompt" rows="4"></textarea></label>
+                        <label class="field"><span>昼夜识别 User Prompt</span><textarea id="vision-day-night-user-prompt" rows="4"></textarea></label>
+                        <label class="field"><span>读时识别 System Prompt</span><textarea id="vision-time-system-prompt" rows="4"></textarea></label>
+                        <label class="field"><span>读时识别 User Prompt</span><textarea id="vision-time-user-prompt" rows="4" placeholder="可使用 {day_night} 占位符"></textarea></label>
+                    </div>
+                </div>
+            </section>
+            <section class="card">
+                <div class="card-header between"><h2>代理配置</h2><button class="btn ghost small" id="add-proxy-btn">新增代理</button></div>
+                <div class="card-body stack-md">
+                    <div class="service-hint">参考 Outlook 项目的分组代理思路：取件代理由分组选择，代理配置集中在这里维护。支持不代理、固定代理、动态代理三种模式。</div>
+                    <table class="data-table">
+                        <thead><tr><th>名称</th><th>模式</th><th>地址</th><th>启用</th><th>操作</th></tr></thead>
+                        <tbody id="proxy-table-body"></tbody>
+                    </table>
+                </div>
+            </section>
+            <section class="card full-width">
+                <div class="card-header between"><h2>识别模型</h2><button class="btn ghost small" id="add-model-btn">新增模型</button></div>
+                <div class="card-body no-pad">
+                    <table class="data-table">
+                        <thead><tr><th>名称</th><th>Base URL</th><th>模型名</th><th>优先级</th><th>启用</th><th>操作</th></tr></thead>
+                        <tbody id="model-table-body"></tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="modal" id="proxy-form-modal">
+        <div class="modal-content narrow">
+            <div class="modal-header">
+                <h3 id="proxy-form-title">新增代理配置</h3>
+                <button class="modal-close" data-close-modal="proxy-form-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="proxy-form" class="stack-md">
+                    <input type="hidden" id="proxy-form-id">
+                    <label class="field"><span>配置名称</span><input type="text" id="proxy-name" placeholder="例如：日本固定代理"></label>
+                    <label class="field"><span>模式</span>
+                        <select id="proxy-mode">
+                            <option value="none">none - 不使用代理</option>
+                            <option value="fixed">fixed - 固定代理</option>
+                            <option value="dynamic">dynamic - 动态代理</option>
+                        </select>
+                    </label>
+                    <div class="mode-grid">
+                        <div class="mode-panel" id="proxy-fixed-panel">
+                            <h4>固定代理</h4>
+                            <label class="field"><span>代理地址</span><input type="text" id="proxy-url" placeholder="socks5://127.0.0.1:7890 或 http://user:pass@host:port"></label>
+                        </div>
+                        <div class="mode-panel" id="proxy-dynamic-panel">
+                            <h4>动态代理</h4>
+                            <div class="form-row">
+                                <label class="field"><span>接口地址</span><input type="text" id="dynamic-proxy-url" placeholder="例如：http://gateway/get-proxy"></label>
+                                <label class="field"><span>代理协议</span><select id="dynamic-proxy-protocol"><option value="socks5">socks5</option><option value="http">http</option><option value="https">https</option></select></label>
+                            </div>
+                        </div>
+                    </div>
+                    <label class="field"><span>启用状态</span><select id="proxy-enabled"><option value="1">启用</option><option value="0">停用</option></select></label>
+                    <ul class="help-list">
+                        <li><code>fixed</code> 直接保存完整代理地址，推荐使用 <code>socks5://</code>、<code>http://</code>、<code>https://</code>。</li>
+                        <li><code>socks://</code> 会自动按 <code>socks5://</code> 处理。</li>
+                        <li><code>dynamic</code> 会在注册时调用 <code>tuta_register.py</code> 里的动态代理逻辑取最新代理。</li>
+                    </ul>
+                    <div class="service-hint">
+                        固定代理样例：<code>socks5://127.0.0.1:7890</code>、<code>http://user:pass@1.2.3.4:8080</code><br>
+                        动态代理样例：接口返回 <code>host:port</code> 或首行 <code>host:port</code>，协议选择 <code>socks5</code> / <code>http</code> / <code>https</code>。
+                    </div>
+                    <div class="proxy-validate-result hidden" id="proxy-validate-result"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn ghost" type="button" id="validate-proxy-btn">验证代理</button>
+                <button class="btn secondary" type="button" data-close-modal="proxy-form-modal">取消</button>
+                <button class="btn primary" id="save-proxy-btn">保存代理</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="model-form-modal">
+        <div class="modal-content narrow">
+            <div class="modal-header">
+                <h3 id="model-form-title">新增识别模型</h3>
+                <button class="modal-close" data-close-modal="model-form-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="model-form" class="stack-md">
+                    <input type="hidden" id="model-form-id">
+                    <label class="field"><span>配置名称</span><input type="text" id="model-name"></label>
+                    <label class="field"><span>API Key</span><input type="text" id="model-api-key"></label>
+                    <div class="form-row">
+                        <label class="field"><span>Base URL</span><input type="text" id="model-base-url" placeholder="建议完整到 /chat/completions"></label>
+                        <label class="field"><span>模型名</span><input type="text" id="model-model-name" placeholder="例如 gpt-4.1-mini"></label>
+                    </div>
+                    <div class="form-row">
+                        <label class="field"><span>优先级</span><input type="number" id="model-priority" value="10"></label>
+                        <label class="field"><span>启用状态</span><select id="model-enabled"><option value="1">启用</option><option value="0">停用</option></select></label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" type="button" data-close-modal="model-form-modal">取消</button>
+                <button class="btn primary" id="save-model-btn">保存模型</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+</body>
+</html>
