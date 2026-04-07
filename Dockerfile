@@ -15,8 +15,11 @@ RUN apt-get update \
 COPY tutamail/requirements.txt /tmp/tutamail-requirements.txt
 RUN pip install --no-cache-dir -r /tmp/tutamail-requirements.txt
 
+RUN npm install --omit=dev --prefix /app --no-fund --no-audit \
+    @tutao/tutanota-utils@340.260326.1 \
+    @tutao/tutanota-error@340.260326.1
+
 COPY package ./package
-COPY node_modules ./node_modules
 COPY liboqs.wasm ./liboqs.wasm
 COPY kyber_gen.mjs ./kyber_gen.mjs
 COPY pq_decrypt.mjs ./pq_decrypt.mjs
