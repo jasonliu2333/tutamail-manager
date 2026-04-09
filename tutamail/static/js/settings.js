@@ -55,6 +55,9 @@ const els = {
     proxyDynamicPanel: document.getElementById('proxy-dynamic-panel'),
     proxyValidateResult: document.getElementById('proxy-validate-result'),
     validateProxyBtn: document.getElementById('validate-proxy-btn'),
+    modelValidateResult: document.getElementById('model-validate-result'),
+    validateModelTextBtn: document.getElementById('validate-model-text-btn'),
+    validateModelVisionBtn: document.getElementById('validate-model-vision-btn'),
     saveProxyBtn: document.getElementById('save-proxy-btn'),
     modelModal: document.getElementById('model-form-modal'),
     modelFormTitle: document.getElementById('model-form-title'),
@@ -308,6 +311,12 @@ function resetProxyValidationResult() {
     els.proxyValidateResult.innerHTML = '';
 }
 
+function resetModelValidationResult() {
+    if (!els.modelValidateResult) return;
+    els.modelValidateResult.className = 'proxy-validate-result hidden';
+    els.modelValidateResult.innerHTML = '';
+}
+
 function renderProxyValidationResult(type, message, extra = {}) {
     if (!els.proxyValidateResult) return;
     const details = [];
@@ -319,6 +328,29 @@ function renderProxyValidationResult(type, message, extra = {}) {
     }
     els.proxyValidateResult.className = `proxy-validate-result ${type}`;
     els.proxyValidateResult.innerHTML = `
+        <div class="proxy-validate-title">${type === 'success' ? '验证成功' : type === 'loading' ? '正在验证' : '验证失败'}</div>
+        <div class="proxy-validate-message">${escapeHtml(message)}</div>
+        ${details.length ? `<div class="proxy-validate-details">${details.join('')}</div>` : ''}
+    `;
+}
+
+function renderModelValidationResult(type, message, extra = {}) {
+    if (!els.modelValidateResult) return;
+    const details = [];
+    if (extra.chat_url) {
+        details.push(`<div><span>请求地址：</span><code>${escapeHtml(extra.chat_url)}</code></div>`);
+    }
+    if (typeof extra.latency_ms === 'number') {
+        details.push(`<div><span>耗时：</span><strong>${escapeHtml(extra.latency_ms)} ms</strong></div>`);
+    }
+    if (extra.sample_source) {
+        details.push(`<div><span>样例图：</span><code>${escapeHtml(extra.sample_source)}</code></div>`);
+    }
+    if (extra.response_preview) {
+        details.push(`<div><span>返回预览：</span><code>${escapeHtml(extra.response_preview)}</code></div>`);
+    }
+    els.modelValidateResult.className = `proxy-validate-result ${type}`;
+    els.modelValidateResult.innerHTML = `
         <div class="proxy-validate-title">${type === 'success' ? '验证成功' : type === 'loading' ? '正在验证' : '验证失败'}</div>
         <div class="proxy-validate-message">${escapeHtml(message)}</div>
         ${details.length ? `<div class="proxy-validate-details">${details.join('')}</div>` : ''}
@@ -386,6 +418,7 @@ function resetModelForm() {
     setElementValue(els.modelModelName, '');
     setElementValue(els.modelPriority, '10');
     setElementValue(els.modelEnabled, '1');
+    resetModelValidationResult();
 }
 
 function fillModelForm(model) {
@@ -397,6 +430,7 @@ function fillModelForm(model) {
     setElementValue(els.modelModelName, model.model_name || '');
     setElementValue(els.modelPriority, String(model.priority ?? 10));
     setElementValue(els.modelEnabled, model.enabled ? '1' : '0');
+    resetModelValidationResult();
 }
 
 function collectModelPayload() {
@@ -494,6 +528,26 @@ async function saveModel() {
     await loadBootstrap();
 }
 
+async function validateModel(mode = 'vision') {
+    const payload = collectModelPayload();
+    payload.validate_mode = mode;
+    renderModelValidationResult(
+        'loading',
+        mode === 'vision' ? '正在测试当前模型配置的视觉对话能力...' : '正在测试当前模型配置的文本对话能力...',
+    );
+    const data = await api('/api/model-profiles/validate', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+    });
+    renderModelValidationResult('success', data.message || '模型验证成功', {
+        chat_url: data.chat_url,
+        latency_ms: data.latency_ms,
+        sample_source: data.sample_source,
+        response_preview: data.response_preview,
+    });
+    notify(data.message || '模型验证成功');
+}
+
 async function handleTableClick(event) {
     const button = event.target.closest('button[data-action]');
     if (!button) return;
@@ -577,6 +631,20 @@ els.validateProxyBtn?.addEventListener('click', () => {
     });
 });
 
+els.validateModelTextBtn?.addEventListener('click', () => {
+    validateModel('text').catch((error) => {
+        renderModelValidationResult('error', error.message || String(error));
+        notify(error.message || String(error));
+    });
+});
+
+els.validateModelVisionBtn?.addEventListener('click', () => {
+    validateModel('vision').catch((error) => {
+        renderModelValidationResult('error', error.message || String(error));
+        notify(error.message || String(error));
+    });
+});
+
 els.saveModelBtn?.addEventListener('click', () => {
     saveModel().catch((error) => notify(error.message || String(error)));
 });
@@ -588,6 +656,12 @@ els.proxyMode?.addEventListener('change', syncProxyModeUI);
     els.proxyUrl?.addEventListener(eventName, resetProxyValidationResult);
     els.dynamicProxyUrl?.addEventListener(eventName, resetProxyValidationResult);
     els.dynamicProxyProtocol?.addEventListener(eventName, resetProxyValidationResult);
+    els.modelName?.addEventListener(eventName, resetModelValidationResult);
+    els.modelApiKey?.addEventListener(eventName, resetModelValidationResult);
+    els.modelBaseUrl?.addEventListener(eventName, resetModelValidationResult);
+    els.modelModelName?.addEventListener(eventName, resetModelValidationResult);
+    els.modelPriority?.addEventListener(eventName, resetModelValidationResult);
+    els.modelEnabled?.addEventListener(eventName, resetModelValidationResult);
 });
 els.proxyTableBody?.addEventListener('click', handleTableClick);
 els.modelTableBody?.addEventListener('click', handleTableClick);

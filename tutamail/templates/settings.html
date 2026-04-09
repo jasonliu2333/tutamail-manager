@@ -178,9 +178,15 @@
                         <label class="field"><span>优先级</span><input type="number" id="model-priority" value="10"></label>
                         <label class="field"><span>启用状态</span><select id="model-enabled"><option value="1">启用</option><option value="0">停用</option></select></label>
                     </div>
+                    <div class="service-hint">
+                        先用“验证文本”确认 API Key、Base URL、模型名可用；再用“验证视觉”确认图片能力与当前接口格式兼容。
+                    </div>
+                    <div class="proxy-validate-result hidden" id="model-validate-result"></div>
                 </form>
             </div>
             <div class="modal-footer">
+                <button class="btn ghost" type="button" id="validate-model-text-btn">验证文本</button>
+                <button class="btn ghost" type="button" id="validate-model-vision-btn">验证视觉</button>
                 <button class="btn secondary" type="button" data-close-modal="model-form-modal">取消</button>
                 <button class="btn primary" id="save-model-btn">保存模型</button>
             </div>
