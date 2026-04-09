@@ -38,6 +38,7 @@ LOG_DIR = APP_DIR / "logs"
 MAIL_CACHE_DIR = DATA_DIR / "mail_cache"
 DB_PATH = DATA_DIR / "tutamail.db"
 APP_LOG_PATH = LOG_DIR / "app.log"
+REGISTER_TASK_LOG_PATH = LOG_DIR / "register_tasks.log"
 
 DATA_DIR.mkdir(parents=True, exist_ok=True)
 LOG_DIR.mkdir(parents=True, exist_ok=True)
@@ -116,6 +117,11 @@ def utc_now() -> str:
 
 def log_app(message: str) -> None:
     with APP_LOG_PATH.open("a", encoding="utf-8") as fh:
+        fh.write(f"[{utc_now()}] {message}\n")
+
+
+def log_register_task(message: str) -> None:
+    with REGISTER_TASK_LOG_PATH.open("a", encoding="utf-8") as fh:
         fh.write(f"[{utc_now()}] {message}\n")
 
 
@@ -1508,6 +1514,10 @@ class TaskManager:
             task["diagnostics"]["last_log_at"] = task["updated_at"]
         try:
             log_app(f"[task:{task_id}] [{level}] {message}")
+        except Exception:
+            pass
+        try:
+            log_register_task(f"[task:{task_id}] [{level}] {message}")
         except Exception:
             pass
 
