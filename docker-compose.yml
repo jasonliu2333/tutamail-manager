@@ -10,6 +10,7 @@ services:
     ports:
       - "${TUTAMAIL_EXPOSE_PORT:-5100}:${TUTAMAIL_PORT:-5100}"
     environment:
+      TZ: "Asia/Shanghai"
       TUTAMAIL_HOST: "${TUTAMAIL_HOST:-0.0.0.0}"
       TUTAMAIL_PORT: "${TUTAMAIL_PORT:-5100}"
       TUTAMAIL_THREADS: "${TUTAMAIL_THREADS:-8}"

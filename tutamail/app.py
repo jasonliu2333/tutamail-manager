@@ -1487,6 +1487,13 @@ class TaskManager:
                 "results": [],
                 "cancel_requested": False,
                 "error": "",
+                "diagnostics": {
+                    "poll_count": 0,
+                    "last_poll_at": "",
+                    "last_poll_source": "",
+                    "last_log_at": utc_now(),
+                    "worker_thread": "",
+                },
             }
         return task_id
 
@@ -1497,6 +1504,7 @@ class TaskManager:
                 return
             task["logs"].append({"ts": utc_now(), "level": level, "message": message})
             task["updated_at"] = utc_now()
+            task["diagnostics"]["last_log_at"] = task["updated_at"]
 
     def update(self, task_id: str, **fields) -> None:
         with self.lock:
@@ -1526,6 +1534,16 @@ class TaskManager:
         with self.lock:
             task = self.tasks.get(task_id)
             return json.loads(json.dumps(task)) if task else None
+
+    def mark_polled(self, task_id: str, source: str = "api") -> None:
+        with self.lock:
+            task = self.tasks.get(task_id)
+            if not task:
+                return
+            task["diagnostics"]["poll_count"] = int(task["diagnostics"].get("poll_count") or 0) + 1
+            task["diagnostics"]["last_poll_at"] = utc_now()
+            task["diagnostics"]["last_poll_source"] = source
+            task["updated_at"] = utc_now()
 
 
 TASK_MANAGER = TaskManager()
@@ -2014,6 +2032,7 @@ def run_registration_task(task_id: str) -> None:
             models = [item for item in models if item["enabled"]]
 
         TASK_MANAGER.update(task_id, status="running")
+        TASK_MANAGER.update(task_id, diagnostics={**task.get("diagnostics", {}), "worker_thread": threading.current_thread().name})
         TASK_MANAGER.log(task_id, f"[系统] 开始注册任务，共 {batch_count} 个账号，并发 {max_workers}")
         TASK_MANAGER.log(task_id, f"[系统] 目标域名: {domain}")
         TASK_MANAGER.log(task_id, f"[系统] 代理配置: {(proxy_profile or {}).get('name', '不使用代理')}")
@@ -2977,6 +2996,7 @@ def api_start_registration():
 @app.route("/api/registration/tasks/<task_id>")
 @login_required
 def api_get_registration_task(task_id: str):
+    TASK_MANAGER.mark_polled(task_id, source="api")
     task = TASK_MANAGER.get(task_id)
     if not task:
         return jsonify({"success": False, "error": "任务不存在"}), 404

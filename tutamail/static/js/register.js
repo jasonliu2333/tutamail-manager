@@ -189,6 +189,14 @@ function appendLog(log) {
     els.consoleLog.scrollTop = els.consoleLog.scrollHeight;
 }
 
+function appendSystemLog(message, level = 'info') {
+    appendLog({
+        ts: new Date().toLocaleTimeString('zh-CN', { hour12: false }),
+        level,
+        message,
+    });
+}
+
 function resetConsole() {
     els.consoleLog.innerHTML = '<div class="log-line info">[系统] 准备就绪，等待开始注册...</div>';
     state.renderedLogs = 0;
@@ -262,10 +270,12 @@ function updateTaskUI(task) {
 async function pollTask(forceTaskId) {
     const taskId = forceTaskId || state.taskId;
     if (!taskId) return;
+    console.debug('[register] pollTask', { taskId, forceTaskId: Boolean(forceTaskId) });
     const data = await api(`/api/registration/tasks/${taskId}`);
     state.taskId = taskId;
     updateTaskUI(data.task);
     if (['completed', 'failed', 'cancelled'].includes(data.task.status)) {
+        appendSystemLog(`[系统] 任务轮询结束，状态=${data.task.status}`, data.task.status === 'completed' ? 'success' : 'warning');
         await loadBootstrap();
     }
 }
@@ -275,28 +285,22 @@ async function restoreActiveTask() {
     if (!savedTaskId) return;
     try {
         resetConsole();
+        appendSystemLog(`[系统] 检测到活动任务 ${savedTaskId}，尝试恢复监控台`, 'info');
         state.taskId = savedTaskId;
         await pollTask(savedTaskId);
         const active = els.cancelBtn.disabled === false;
         if (active) {
-            appendLog({
-                ts: new Date().toLocaleTimeString('zh-CN', { hour12: false }),
-                level: 'info',
-                message: '[系统] 已恢复正在运行的注册任务',
-            });
+            appendSystemLog('[系统] 已恢复正在运行的注册任务', 'info');
             if (state.pollTimer) clearInterval(state.pollTimer);
             state.pollTimer = setInterval(() => pollTask().catch(handleError), 1500);
         } else {
-            appendLog({
-                ts: new Date().toLocaleTimeString('zh-CN', { hour12: false }),
-                level: 'info',
-                message: '[系统] 已恢复最近一次任务状态',
-            });
+            appendSystemLog('[系统] 已恢复最近一次任务状态', 'info');
         }
     } catch (error) {
         clearActiveTaskId();
         resetTaskUI('[系统] 未找到正在运行的注册任务，监控台已重置');
         window.UI?.toast('任务已失效，监控台已重置。', 'warning');
+        appendSystemLog(`[系统] 恢复任务失败：${error.message || String(error)}`, 'error');
         console.warn('restore active task failed', error);
     }
 }
@@ -329,6 +333,7 @@ async function startTask(event) {
         const data = await api('/api/registration/start', { method: 'POST', body: JSON.stringify(payload) });
         state.taskId = data.task_id;
         saveActiveTaskId(data.task_id);
+        appendSystemLog(`[系统] 已绑定注册任务 ${data.task_id}`, 'info');
         state.renderedLogs = 0;
         await pollTask(data.task_id);
         if (state.pollTimer) clearInterval(state.pollTimer);
@@ -351,7 +356,7 @@ async function cancelTask() {
 }
 
 function handleError(error) {
-    appendLog({ ts: new Date().toLocaleTimeString('zh-CN', { hour12: false }), level: 'error', message: error.message || String(error) });
+    appendSystemLog(error.message || String(error), 'error');
     console.error(error);
 }
 
