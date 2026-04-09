@@ -920,6 +920,25 @@ def delete_accounts(account_ids: list[int]) -> int:
     return cur.rowcount
 
 
+def move_accounts_to_group(account_ids: list[int], target_group_id: int) -> int:
+    valid_ids = [int(item) for item in account_ids if int(item) > 0]
+    target_group_id = int(target_group_id or 0)
+    if not valid_ids:
+        return 0
+    if target_group_id <= 0:
+        raise ValueError("目标分组无效")
+    group = load_group(target_group_id)
+    if not group:
+        raise ValueError("目标分组不存在")
+    placeholders = ",".join("?" for _ in valid_ids)
+    params = [target_group_id, utc_now(), *valid_ids]
+    cur = db_execute(
+        f"UPDATE accounts SET group_id = ?, updated_at = ? WHERE id IN ({placeholders})",
+        tuple(params),
+    )
+    return cur.rowcount
+
+
 def parse_account_line(line: str) -> dict[str, str] | None:
     if not line or line.startswith("#"):
         return None
@@ -2661,6 +2680,31 @@ def api_batch_delete_accounts():
         return jsonify({"success": False, "error": "请选择要删除的账号"})
     deleted = delete_accounts(account_ids)
     return jsonify({"success": True, "deleted": deleted, "message": f"已删除 {deleted} 个账号"})
+
+
+@app.route("/api/accounts/batch-move-group", methods=["POST"])
+@login_required
+def api_batch_move_accounts_group():
+    data = request.get_json() or {}
+    account_ids = [int(item) for item in (data.get("account_ids") or []) if str(item).strip()]
+    target_group_id = int(data.get("target_group_id") or 0)
+    if not account_ids:
+        return jsonify({"success": False, "error": "请选择要移动的账号"})
+    if target_group_id <= 0:
+        return jsonify({"success": False, "error": "请选择目标分组"})
+    try:
+        moved = move_accounts_to_group(account_ids, target_group_id)
+        group = load_group(target_group_id)
+        group_name = (group or {}).get("name") or str(target_group_id)
+        return jsonify({
+            "success": True,
+            "moved": moved,
+            "target_group_id": target_group_id,
+            "target_group_name": group_name,
+            "message": f"已将 {moved} 个账号移动到分组“{group_name}”",
+        })
+    except ValueError as exc:
+        return jsonify({"success": False, "error": str(exc)}), 400
 
 
 @app.route("/api/export/verify", methods=["POST"])

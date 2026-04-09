@@ -5,6 +5,7 @@ const state = {
     selectedMailId: null,
     selectedAccountIds: new Set(),
     editingAccountId: null,
+    pendingMoveGroupId: null,
     mailSkip: 0,
     hasMore: false,
     accountKeyword: '',
@@ -52,7 +53,6 @@ const els = {
     summaryIssueCount: document.getElementById('summary-issue-count'),
     summaryDisabledCount: document.getElementById('summary-disabled-count'),
     accountStatusFilter: document.getElementById('account-status-filter'),
-    toggleRevokedFilterBtn: document.getElementById('toggle-revoked-filter-btn'),
     exportFilteredAccountsBtn: document.getElementById('export-filtered-accounts-btn'),
     currentGroupColor: document.getElementById('current-group-color'),
     currentGroupName: document.getElementById('current-group-name'),
@@ -80,6 +80,7 @@ const els = {
     clearAccountSelectionBtn: document.getElementById('clear-account-selection-btn'),
     refreshSelectedStatusBtn: document.getElementById('refresh-selected-status-btn'),
     refreshSelectedMailsBtn: document.getElementById('refresh-selected-mails-btn'),
+    moveSelectedAccountsBtn: document.getElementById('move-selected-accounts-btn'),
     batchDeleteAccountsBtn: document.getElementById('batch-delete-accounts-btn'),
     importModal: document.getElementById('account-import-modal'),
     importGroupSelect: document.getElementById('import-group-select'),
@@ -121,6 +122,10 @@ const els = {
     groupCustomColorInput: document.getElementById('group-custom-color-input'),
     groupProxyProfileId: document.getElementById('group-proxy-profile-id'),
     saveGroupBtn: document.getElementById('save-group-btn'),
+    batchMoveGroupModal: document.getElementById('batch-move-group-modal'),
+    batchMoveGroupHint: document.getElementById('batch-move-group-hint'),
+    batchMoveGroupSelect: document.getElementById('batch-move-group-select'),
+    confirmBatchMoveGroupBtn: document.getElementById('confirm-batch-move-group-btn'),
     mailRefreshModal: document.getElementById('mail-refresh-modal'),
     mailRefreshModalTitle: document.getElementById('mail-refresh-modal-title'),
     mailRefreshStatus: document.getElementById('mail-refresh-status'),
@@ -401,11 +406,6 @@ function renderAccountSummary() {
         const filter = chip.dataset.summaryFilter || 'all';
         chip.classList.toggle('active', (state.accountStatusFilter || 'all') === filter);
     });
-    if (els.toggleRevokedFilterBtn) {
-        const active = (state.accountStatusFilter || 'all') === 'account_exists_but_login_revoked';
-        els.toggleRevokedFilterBtn.classList.toggle('active', active);
-        els.toggleRevokedFilterBtn.textContent = active ? '显示全部' : '仅看禁登';
-    }
 }
 
 function applyAccountStatusFilter(targetFilter) {
@@ -448,6 +448,9 @@ function updateBatchBar() {
     els.selectedAccountCount.textContent = `已选 ${count} 项`;
     els.accountBatchBar.classList.toggle('hidden', count === 0);
     els.batchDeleteAccountsBtn.disabled = count === 0;
+    if (els.moveSelectedAccountsBtn) {
+        els.moveSelectedAccountsBtn.disabled = count === 0;
+    }
     if (els.refreshSelectedMailsBtn) {
         els.refreshSelectedMailsBtn.disabled = count === 0 || isMailRefreshRunning();
     }
@@ -1317,6 +1320,65 @@ async function batchDeleteAccounts() {
     await loadBootstrap();
 }
 
+function openBatchMoveGroupModal() {
+    const accountIds = [...state.selectedAccountIds];
+    if (!accountIds.length) {
+        notify('请先选择账号');
+        return;
+    }
+    const groups = state.bootstrap?.groups || [];
+    if (!groups.length) {
+        notify('没有可移动的目标分组');
+        return;
+    }
+    renderGroupOptions(els.batchMoveGroupSelect, groups, 'id', (item) => `${item.name} (${item.account_count || 0})`, groups[0]?.id || '');
+    state.pendingMoveGroupId = Number(els.batchMoveGroupSelect.value || groups[0]?.id || 0);
+    if (els.batchMoveGroupHint) {
+        els.batchMoveGroupHint.textContent = `将把已选 ${accountIds.length} 个账号移动到指定分组。`;
+    }
+    openModal(els.batchMoveGroupModal);
+}
+
+async function submitBatchMoveGroup() {
+    const accountIds = [...state.selectedAccountIds];
+    const targetGroupId = Number(els.batchMoveGroupSelect?.value || 0);
+    if (!accountIds.length) {
+        throw new Error('请先选择账号');
+    }
+    if (!targetGroupId) {
+        throw new Error('请选择目标分组');
+    }
+    const group = (state.bootstrap?.groups || []).find((item) => Number(item.id) === targetGroupId);
+    const groupName = group?.name || targetGroupId;
+    const ok = await window.UI.confirm(`确认将已选 ${accountIds.length} 个账号移动到分组“${groupName}”吗？`, {
+        title: '批量移动分组',
+        confirmText: '确认移动',
+        meta: '移动后这些账号会从当前分组或当前筛选结果中消失。',
+    });
+    if (!ok) return;
+    const result = await api('/api/accounts/batch-move-group', {
+        method: 'POST',
+        body: JSON.stringify({
+            account_ids: accountIds,
+            target_group_id: targetGroupId,
+        }),
+    });
+    const movedAccounts = (state.bootstrap?.accounts || []).filter((item) => accountIds.includes(item.id));
+    if (movedAccounts.some((item) => item.email === state.selectedAccountEmail)) {
+        state.selectedAccountEmail = null;
+        state.selectedMailId = null;
+        state.currentEmails = [];
+        state.currentMailMethod = '-';
+        state.hasMore = false;
+        clearStoredAccountEmail();
+        clearStoredMailRef();
+    }
+    state.selectedAccountIds.clear();
+    closeModal(els.batchMoveGroupModal);
+    notify(result.message || '批量移动完成');
+    await loadBootstrap();
+}
+
 function openCreateAccountModal() {
     resetAccountForm();
     openModal(els.accountModal);
@@ -1772,13 +1834,6 @@ els.accountSummaryRow?.addEventListener('click', (event) => {
     applyAccountStatusFilter(chip.dataset.summaryFilter || 'all');
 });
 
-els.toggleRevokedFilterBtn?.addEventListener('click', () => {
-    const next = (state.accountStatusFilter || 'all') === 'account_exists_but_login_revoked'
-        ? 'all'
-        : 'account_exists_but_login_revoked';
-    applyAccountStatusFilter(next);
-});
-
 els.exportFilteredAccountsBtn?.addEventListener('click', exportFilteredAccounts);
 
 els.currentAccountBanner?.addEventListener('click', async () => {
@@ -1820,7 +1875,12 @@ els.selectAllAccountsBtn.addEventListener('click', selectAllVisibleAccounts);
 els.clearAccountSelectionBtn.addEventListener('click', clearSelectedAccounts);
 els.refreshSelectedStatusBtn?.addEventListener('click', () => refreshSelectedStatuses().catch((error) => notify(error.message || String(error))));
 els.refreshSelectedMailsBtn?.addEventListener('click', () => refreshSelectedAccounts().catch((error) => notify(error.message || String(error))));
+els.moveSelectedAccountsBtn?.addEventListener('click', openBatchMoveGroupModal);
 els.batchDeleteAccountsBtn.addEventListener('click', () => batchDeleteAccounts().catch((error) => notify(error.message || String(error))));
+els.batchMoveGroupSelect?.addEventListener('change', (event) => {
+    state.pendingMoveGroupId = Number(event.target.value || 0);
+});
+els.confirmBatchMoveGroupBtn?.addEventListener('click', () => submitBatchMoveGroup().catch((error) => notify(error.message || String(error))));
 els.refreshMailsBtn.addEventListener('click', () => loadEmails(true, true).catch((error) => notify(error.message || String(error))));
 els.loadMoreMailsBtn.addEventListener('click', () => loadEmails(false, true).catch((error) => notify(error.message || String(error))));
 els.clearAccountImportBtn.addEventListener('click', resetImportModal);

@@ -70,12 +70,11 @@
                     </select>
                 </div>
                 <div class="account-quick-row">
-                    <button class="utility-btn compact" id="toggle-revoked-filter-btn">仅看禁登</button>
                     <button class="utility-btn compact" id="export-filtered-accounts-btn">导出当前筛选</button>
                 </div>
                 <div class="account-utility-row">
                     <div class="account-utility-grid">
-                        <button class="utility-btn active" id="select-all-accounts-btn">选中筛选</button>
+                        <button class="utility-btn active" id="select-all-accounts-btn">全选当前筛选</button>
                         <button class="utility-btn" id="refresh-group-mails-btn">取本组</button>
                         <button class="utility-btn" id="refresh-all-mails-btn">取全部</button>
                     </div>
@@ -94,6 +93,7 @@
                     <button class="utility-btn compact" id="clear-account-selection-btn">清空</button>
                     <button class="utility-btn compact" id="refresh-selected-status-btn">刷新状态</button>
                     <button class="utility-btn compact" id="refresh-selected-mails-btn">复检已选</button>
+                    <button class="utility-btn compact" id="move-selected-accounts-btn">移动到分组</button>
                     <button class="utility-btn compact danger" id="batch-delete-accounts-btn">删除选中</button>
                 </div>
                 <div class="account-panel-footer">
@@ -304,6 +304,26 @@
             <div class="modal-footer outlook-modal-footer">
                 <button class="btn secondary modal-action-btn" data-close-modal="group-form-modal">取消</button>
                 <button class="btn primary modal-action-btn" id="save-group-btn">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="batch-move-group-modal">
+        <div class="modal-content narrow">
+            <div class="modal-header">
+                <h3>批量移动分组</h3>
+                <button class="modal-close" data-close-modal="batch-move-group-modal">&times;</button>
+            </div>
+            <div class="modal-body stack-md">
+                <div class="service-hint" id="batch-move-group-hint">请选择目标分组。</div>
+                <label class="field">
+                    <span>目标分组</span>
+                    <select id="batch-move-group-select"></select>
+                </label>
+            </div>
+            <div class="modal-footer">
+                <button class="btn secondary" data-close-modal="batch-move-group-modal">取消</button>
+                <button class="btn primary" id="confirm-batch-move-group-btn">确认移动</button>
             </div>
         </div>
     </div>
