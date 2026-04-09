@@ -1,0 +1,9 @@
+export declare enum KeyLength {
+    b128 = "128",
+    b256 = "256"
+}
+export type EntropySource = "mouse" | "touch" | "key" | "random" | "static" | "time" | "accel";
+export type HkdfKeyDerivationDomains = "userGroupKeyDistributionKey" | "newAdminPubKeyAuthKeyForUserGroupKeyRotation" | "adminGroupDistributionKeyPairEncryptionKey" | "adminGroupDistKeyPairAuthKeyForMultiAdminRotation" | "newAdminSymKeyAuthKeyForMultiAdminRotationAsUser" | "newUserGroupKeyAuthKeyForRotationAsNonAdminUser" | "versionedUserGroupKeyDistributionKey" | "publicIdentityKey";
+export type MacTag = Uint8Array & {
+    __brand: "macTag";
+};

@@ -19,13 +19,7 @@ mail_details/
 .env.*
 !.env.example
 
-node_modules/*
-!node_modules/@tutao/
-node_modules/@tutao/*
-!node_modules/@tutao/tutanota-utils/
-!node_modules/@tutao/tutanota-utils/**
-!node_modules/@tutao/tutanota-error/
-!node_modules/@tutao/tutanota-error/**
+node_modules/
 codex-manager-master/
 outlookEmail-main/
 

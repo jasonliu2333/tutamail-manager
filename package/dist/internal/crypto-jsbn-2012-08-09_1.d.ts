@@ -1,0 +1,235 @@
+export function BigInteger(a: any, b: any, c: any): void;
+export class BigInteger {
+    constructor(a: any, b: any, c: any);
+    am: typeof am2 | typeof am1 | typeof am3;
+    DB: number;
+    DM: number;
+    DV: number;
+    FV: number;
+    F1: number;
+    F2: number;
+    copyTo: typeof bnpCopyTo;
+    fromInt: typeof bnpFromInt;
+    fromString: typeof bnpFromString;
+    clamp: typeof bnpClamp;
+    dlShiftTo: typeof bnpDLShiftTo;
+    drShiftTo: typeof bnpDRShiftTo;
+    lShiftTo: typeof bnpLShiftTo;
+    rShiftTo: typeof bnpRShiftTo;
+    subTo: typeof bnpSubTo;
+    multiplyTo: typeof bnpMultiplyTo;
+    squareTo: typeof bnpSquareTo;
+    divRemTo: typeof bnpDivRemTo;
+    invDigit: typeof bnpInvDigit;
+    isEven: typeof bnpIsEven;
+    exp: typeof bnpExp;
+    toString: typeof bnToString;
+    negate: typeof bnNegate;
+    abs: typeof bnAbs;
+    compareTo: typeof bnCompareTo;
+    bitLength: typeof bnBitLength;
+    mod: typeof bnMod;
+    modPowInt: typeof bnModPowInt;
+    chunkSize: typeof bnpChunkSize;
+    toRadix: typeof bnpToRadix;
+    fromRadix: typeof bnpFromRadix;
+    fromNumber: typeof bnpFromNumber;
+    bitwiseTo: typeof bnpBitwiseTo;
+    changeBit: typeof bnpChangeBit;
+    addTo: typeof bnpAddTo;
+    dMultiply: typeof bnpDMultiply;
+    dAddOffset: typeof bnpDAddOffset;
+    multiplyLowerTo: typeof bnpMultiplyLowerTo;
+    multiplyUpperTo: typeof bnpMultiplyUpperTo;
+    modInt: typeof bnpModInt;
+    millerRabin: typeof bnpMillerRabin;
+    clone: typeof bnClone;
+    intValue: typeof bnIntValue;
+    byteValue: typeof bnByteValue;
+    shortValue: typeof bnShortValue;
+    signum: typeof bnSigNum;
+    toByteArray: typeof bnToByteArray;
+    equals: typeof bnEquals;
+    min: typeof bnMin;
+    max: typeof bnMax;
+    and: typeof bnAnd;
+    or: typeof bnOr;
+    xor: typeof bnXor;
+    andNot: typeof bnAndNot;
+    not: typeof bnNot;
+    shiftLeft: typeof bnShiftLeft;
+    shiftRight: typeof bnShiftRight;
+    getLowestSetBit: typeof bnGetLowestSetBit;
+    bitCount: typeof bnBitCount;
+    testBit: typeof bnTestBit;
+    setBit: typeof bnSetBit;
+    clearBit: typeof bnClearBit;
+    flipBit: typeof bnFlipBit;
+    add: typeof bnAdd;
+    subtract: typeof bnSubtract;
+    multiply: typeof bnMultiply;
+    divide: typeof bnDivide;
+    remainder: typeof bnRemainder;
+    divideAndRemainder: typeof bnDivideAndRemainder;
+    modPow: typeof bnModPow;
+    modInverse: typeof bnModInverse;
+    pow: typeof bnPow;
+    gcd: typeof bnGCD;
+    isProbablePrime: typeof bnIsProbablePrime;
+    square: typeof bnSquare;
+}
+export namespace BigInteger {
+    let ZERO: BigInteger;
+    let ONE: BigInteger;
+}
+export function parseBigInt(str: any, r: any): BigInteger;
+export function RSAKey(): void;
+export class RSAKey {
+    n: any;
+    e: number;
+    d: any;
+    p: any;
+    q: any;
+    dmp1: any;
+    dmq1: any;
+    coeff: any;
+    doPublic: typeof RSADoPublic;
+    setPublic: typeof RSASetPublic;
+    encrypt: typeof RSAEncrypt;
+    doPrivate: typeof RSADoPrivate;
+    setPrivate: typeof RSASetPrivate;
+    setPrivateEx: typeof RSASetPrivateEx;
+    generate: typeof RSAGenerate;
+    decrypt: typeof RSADecrypt;
+}
+declare function am2(i: any, x: any, w: any, j: any, c: any, n: any): any;
+declare function am1(i: any, x: any, w: any, j: any, c: any, n: any): any;
+declare function am3(i: any, x: any, w: any, j: any, c: any, n: any): any;
+declare function bnpCopyTo(r: any): void;
+declare function bnpFromInt(x: any): void;
+declare class bnpFromInt {
+    constructor(x: any);
+    t: number;
+    s: number;
+    0: any;
+}
+declare function bnpFromString(s: any, b: any): void;
+declare class bnpFromString {
+    constructor(s: any, b: any);
+    t: number | undefined;
+    s: number | undefined;
+}
+declare function bnpClamp(): void;
+declare function bnpDLShiftTo(n: any, r: any): void;
+declare function bnpDRShiftTo(n: any, r: any): void;
+declare function bnpLShiftTo(n: any, r: any): void;
+declare function bnpRShiftTo(n: any, r: any): void;
+declare function bnpSubTo(a: any, r: any): void;
+declare function bnpMultiplyTo(a: any, r: any): void;
+declare function bnpSquareTo(r: any): void;
+declare function bnpDivRemTo(m: any, q: any, r: any): void;
+declare function bnpInvDigit(): number;
+declare function bnpIsEven(): boolean;
+declare function bnpExp(e: any, z: any): any;
+declare function bnToString(b: any): any;
+declare function bnNegate(): BigInteger;
+declare function bnAbs(): any;
+declare function bnCompareTo(a: any): number;
+declare function bnBitLength(): number;
+declare function bnMod(a: any): BigInteger;
+declare function bnModPowInt(e: any, m: any): any;
+declare function bnpChunkSize(r: any): number;
+declare function bnpToRadix(b: any): string;
+declare function bnpFromRadix(s: any, b: any): void;
+declare function bnpFromNumber(a: any, b: any, c: any): void;
+declare function bnpBitwiseTo(a: any, op: any, r: any): void;
+declare function bnpChangeBit(n: any, op: any): BigInteger;
+declare function bnpAddTo(a: any, r: any): void;
+declare function bnpDMultiply(n: any): void;
+declare class bnpDMultiply {
+    constructor(n: any);
+}
+declare function bnpDAddOffset(n: any, w: any): void;
+declare class bnpDAddOffset {
+    constructor(n: any, w: any);
+}
+declare function bnpMultiplyLowerTo(a: any, n: any, r: any): void;
+declare function bnpMultiplyUpperTo(a: any, n: any, r: any): void;
+declare function bnpModInt(n: any): number;
+declare function bnpMillerRabin(t: any): boolean;
+declare function bnClone(): BigInteger;
+declare function bnIntValue(): any;
+declare function bnByteValue(): any;
+declare function bnShortValue(): any;
+declare function bnSigNum(): 0 | 1 | -1;
+declare function bnToByteArray(): any[];
+declare function bnEquals(a: any): boolean;
+declare function bnMin(a: any): any;
+declare function bnMax(a: any): any;
+declare function bnAnd(a: any): BigInteger;
+declare function bnOr(a: any): BigInteger;
+declare function bnXor(a: any): BigInteger;
+declare function bnAndNot(a: any): BigInteger;
+declare function bnNot(): BigInteger;
+declare function bnShiftLeft(n: any): BigInteger;
+declare function bnShiftRight(n: any): BigInteger;
+declare function bnGetLowestSetBit(): number;
+declare function bnBitCount(): number;
+declare function bnTestBit(n: any): boolean;
+declare function bnSetBit(n: any): any;
+declare function bnClearBit(n: any): any;
+declare function bnFlipBit(n: any): any;
+declare function bnAdd(a: any): BigInteger;
+declare function bnSubtract(a: any): BigInteger;
+declare function bnMultiply(a: any): BigInteger;
+declare function bnDivide(a: any): BigInteger;
+declare function bnRemainder(a: any): BigInteger;
+declare function bnDivideAndRemainder(a: any): BigInteger[];
+declare function bnModPow(e: any, m: any): BigInteger;
+declare function bnModInverse(m: any): BigInteger;
+declare function bnPow(e: any): any;
+declare function bnGCD(a: any): any;
+declare function bnIsProbablePrime(t: any): any;
+declare function bnSquare(): BigInteger;
+declare function RSADoPublic(x: any): any;
+declare function RSASetPublic(N: any, E: any): void;
+declare class RSASetPublic {
+    constructor(N: any, E: any);
+    n: BigInteger | undefined;
+    e: number | undefined;
+}
+declare function RSAEncrypt(text: any): any;
+declare function RSADoPrivate(x: any): any;
+declare function RSASetPrivate(N: any, E: any, D: any): void;
+declare class RSASetPrivate {
+    constructor(N: any, E: any, D: any);
+    n: BigInteger | undefined;
+    e: number | undefined;
+    d: BigInteger | undefined;
+}
+declare function RSASetPrivateEx(N: any, E: any, D: any, P: any, Q: any, DP: any, DQ: any, C: any): void;
+declare class RSASetPrivateEx {
+    constructor(N: any, E: any, D: any, P: any, Q: any, DP: any, DQ: any, C: any);
+    n: BigInteger | undefined;
+    e: number | undefined;
+    d: BigInteger | undefined;
+    p: BigInteger | undefined;
+    q: BigInteger | undefined;
+    dmp1: BigInteger | undefined;
+    dmq1: BigInteger | undefined;
+    coeff: BigInteger | undefined;
+}
+declare function RSAGenerate(B: any, E: any): void;
+declare class RSAGenerate {
+    constructor(B: any, E: any);
+    e: number;
+    p: BigInteger;
+    q: BigInteger;
+    n: BigInteger;
+    d: BigInteger;
+    dmp1: BigInteger;
+    dmq1: BigInteger;
+    coeff: BigInteger;
+}
+declare function RSADecrypt(ctext: any): string | null;
+export {};
