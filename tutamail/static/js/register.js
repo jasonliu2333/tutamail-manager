@@ -3,6 +3,7 @@ const state = {
     pollTimer: null,
     bootstrap: null,
     renderedLogs: 0,
+    pollInFlight: false,
 };
 
 const STORAGE_KEY = 'tutamail_register_form_state';
@@ -44,15 +45,33 @@ function escapeHtml(value) {
 }
 
 async function api(url, options = {}) {
-    const response = await fetch(url, {
-        headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-        ...options,
-    });
-    const data = await response.json();
-    if (!response.ok || data.success === false) {
-        throw new Error(data.error || `请求失败: ${response.status}`);
+    const { timeoutMs = 0, headers = {}, ...rest } = options;
+    const controller = timeoutMs > 0 ? new AbortController() : null;
+    let timer = null;
+    try {
+        if (controller) {
+            timer = window.setTimeout(() => controller.abort(), timeoutMs);
+        }
+        const response = await fetch(url, {
+            headers: { 'Content-Type': 'application/json', ...headers },
+            signal: controller?.signal,
+            ...rest,
+        });
+        const data = await response.json();
+        if (!response.ok || data.success === false) {
+            throw new Error(data.error || `请求失败: ${response.status}`);
+        }
+        return data;
+    } catch (error) {
+        if (error?.name === 'AbortError') {
+            throw new Error(`请求超时: ${url}`);
+        }
+        throw error;
+    } finally {
+        if (timer) {
+            window.clearTimeout(timer);
+        }
     }
-    return data;
 }
 
 function renderSelectOptions(select, items, valueKey, labelFn, selectedValue) {
@@ -197,6 +216,10 @@ function appendSystemLog(message, level = 'info') {
     });
 }
 
+function nextFrame() {
+    return new Promise((resolve) => window.requestAnimationFrame(() => resolve()));
+}
+
 function resetConsole() {
     els.consoleLog.innerHTML = '<div class="log-line info">[系统] 准备就绪，等待开始注册...</div>';
     state.renderedLogs = 0;
@@ -232,7 +255,21 @@ function setBadge(status) {
     els.statusBadge.textContent = textMap[status] || status || '等待中';
 }
 
-function updateTaskUI(task) {
+async function renderTaskLogs(logs) {
+    const chunkSize = 100;
+    while (state.renderedLogs < logs.length) {
+        const upper = Math.min(state.renderedLogs + chunkSize, logs.length);
+        while (state.renderedLogs < upper) {
+            appendLog(logs[state.renderedLogs]);
+            state.renderedLogs += 1;
+        }
+        if (state.renderedLogs < logs.length) {
+            await nextFrame();
+        }
+    }
+}
+
+async function updateTaskUI(task) {
     els.statusGrid.classList.remove('hidden');
     els.progressBlock.classList.remove('hidden');
     els.taskIdLabel.textContent = task.id;
@@ -245,10 +282,7 @@ function updateTaskUI(task) {
     els.progressFill.style.width = `${percent}%`;
     setBadge(task.status);
 
-    while (state.renderedLogs < task.logs.length) {
-        appendLog(task.logs[state.renderedLogs]);
-        state.renderedLogs += 1;
-    }
+    await renderTaskLogs(task.logs || []);
 
     const active = task.status === 'pending' || task.status === 'running';
     els.startBtn.disabled = active;
@@ -269,14 +303,19 @@ function updateTaskUI(task) {
 
 async function pollTask(forceTaskId) {
     const taskId = forceTaskId || state.taskId;
-    if (!taskId) return;
-    console.debug('[register] pollTask', { taskId, forceTaskId: Boolean(forceTaskId) });
-    const data = await api(`/api/registration/tasks/${taskId}`);
-    state.taskId = taskId;
-    updateTaskUI(data.task);
-    if (['completed', 'failed', 'cancelled'].includes(data.task.status)) {
-        appendSystemLog(`[系统] 任务轮询结束，状态=${data.task.status}`, data.task.status === 'completed' ? 'success' : 'warning');
-        await loadBootstrap();
+    if (!taskId || state.pollInFlight) return;
+    state.pollInFlight = true;
+    try {
+        console.debug('[register] pollTask', { taskId, forceTaskId: Boolean(forceTaskId) });
+        const data = await api(`/api/registration/tasks/${taskId}`, { timeoutMs: 8000 });
+        state.taskId = taskId;
+        await updateTaskUI(data.task);
+        if (['completed', 'failed', 'cancelled'].includes(data.task.status)) {
+            appendSystemLog(`[系统] 任务轮询结束，状态=${data.task.status}`, data.task.status === 'completed' ? 'success' : 'warning');
+            await loadBootstrap();
+        }
+    } finally {
+        state.pollInFlight = false;
     }
 }
 
