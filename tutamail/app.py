@@ -1502,9 +1502,14 @@ class TaskManager:
             task = self.tasks.get(task_id)
             if not task:
                 return
-            task["logs"].append({"ts": utc_now(), "level": level, "message": message})
-            task["updated_at"] = utc_now()
+            timestamp = utc_now()
+            task["logs"].append({"ts": timestamp, "level": level, "message": message})
+            task["updated_at"] = timestamp
             task["diagnostics"]["last_log_at"] = task["updated_at"]
+        try:
+            log_app(f"[task:{task_id}] [{level}] {message}")
+        except Exception:
+            pass
 
     def update(self, task_id: str, **fields) -> None:
         with self.lock:

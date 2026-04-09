@@ -67,7 +67,7 @@ CONFIG_DEFAULTS = {
     "vision_resize_height": 0,
     "vision_resize_ref": "",
     "vision_crop_mode": "auto",
-    "vision_save_thumbs": True,
+    "vision_save_thumbs": False,
     "vision_thumb_dir": "captchas/_thumbs",
     "vision_day_night_system_prompt": (
         "You are a captcha visual inspector. Only classify day or night. "
@@ -1226,7 +1226,6 @@ class CaptchaTimeSolver:
         if resize_enabled:
             crop = cls._resize_for_vision(crop, max_side=max_side, target_size=target_size)
 
-        # 保存缩略图
         thumb_path = None
         if bool(_CONFIG.get("vision_save_thumbs", DEFAULT_VISION_SAVE_THUMBS)):
             thumb_dir = str(_CONFIG.get("vision_thumb_dir", DEFAULT_VISION_THUMB_DIR) or "").strip()
@@ -1543,25 +1542,23 @@ class TutaRegister:
         final_status = r.status_code
         final_data = data
         if images:
-            # 保存验证码图片
-            captcha_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "captchas")
-            os.makedirs(captcha_dir, exist_ok=True)
-            saved_paths = []
-            try:
-                for name, img_b64 in images:
-                    captcha_path = os.path.join(
-                        captcha_dir, f"{name}_{self.tag}_{int(time.time())}.png"
-                    )
-                    with open(captcha_path, "wb") as f:
-                        f.write(base64.b64decode(img_b64))
-                    saved_paths.append(captcha_path)
-                for p in saved_paths:
-                    self._print(f"[Step 3] 验证码图片已保存: {p}")
-            except Exception as e:
-                raise Exception(f"验证码图片保存失败: {e}")
-
             # 仅获取验证码图片（用于人工输入）
             if _is_truthy(self.config.get("captcha_only", DEFAULT_CAPTCHA_ONLY)):
+                captcha_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "captchas")
+                os.makedirs(captcha_dir, exist_ok=True)
+                saved_paths = []
+                try:
+                    for name, img_b64 in images:
+                        captcha_path = os.path.join(
+                            captcha_dir, f"{name}_{self.tag}_{int(time.time())}.png"
+                        )
+                        with open(captcha_path, "wb") as f:
+                            f.write(base64.b64decode(img_b64))
+                        saved_paths.append(captcha_path)
+                    for p in saved_paths:
+                        self._print(f"[Step 3] 验证码图片已保存: {p}")
+                except Exception as e:
+                    raise Exception(f"验证码图片保存失败: {e}")
                 if token:
                     self.captcha_token = token
                 # 保存上下文，便于后续手工提交答案
