@@ -6,6 +6,7 @@ const state = {
 };
 
 const STORAGE_KEY = 'tutamail_register_form_state';
+const ACTIVE_TASK_KEY = 'tutamail_register_active_task_id';
 
 const els = {
     form: document.getElementById('register-form'),
@@ -113,6 +114,32 @@ function loadSavedFormState() {
     }
 }
 
+function saveActiveTaskId(taskId) {
+    try {
+        if (taskId) {
+            window.localStorage?.setItem(ACTIVE_TASK_KEY, String(taskId));
+        } else {
+            window.localStorage?.removeItem(ACTIVE_TASK_KEY);
+        }
+    } catch (error) {
+        console.warn('save active register task failed', error);
+    }
+}
+
+function loadActiveTaskId() {
+    try {
+        const raw = window.localStorage?.getItem(ACTIVE_TASK_KEY);
+        return raw ? String(raw) : null;
+    } catch (error) {
+        console.warn('load active register task failed', error);
+        return null;
+    }
+}
+
+function clearActiveTaskId() {
+    saveActiveTaskId(null);
+}
+
 function applySavedFormState(savedState, bootstrap) {
     if (!savedState || !bootstrap) return;
     if (savedState.mail_domain && bootstrap.domains.includes(savedState.mail_domain)) {
@@ -167,6 +194,23 @@ function resetConsole() {
     state.renderedLogs = 0;
 }
 
+function resetTaskUI(message = '[系统] 准备就绪，等待开始注册...') {
+    if (state.pollTimer) {
+        clearInterval(state.pollTimer);
+        state.pollTimer = null;
+    }
+    state.taskId = null;
+    clearActiveTaskId();
+    els.statusGrid.classList.add('hidden');
+    els.progressBlock.classList.add('hidden');
+    els.startBtn.disabled = false;
+    els.cancelBtn.disabled = true;
+    els.consoleLog.innerHTML = `<div class="log-line info">${escapeHtml(message)}</div>`;
+    state.renderedLogs = 0;
+    els.progressFill.style.width = '0%';
+    setBadge('pending');
+}
+
 function setBadge(status) {
     els.statusBadge.classList.remove('hidden', 'pending', 'running', 'completed', 'failed', 'cancelled');
     els.statusBadge.classList.add(status || 'pending');
@@ -201,6 +245,14 @@ function updateTaskUI(task) {
     const active = task.status === 'pending' || task.status === 'running';
     els.startBtn.disabled = active;
     els.cancelBtn.disabled = !active;
+    if (task.id) {
+        state.taskId = task.id;
+    }
+    if (active) {
+        saveActiveTaskId(task.id);
+    } else {
+        clearActiveTaskId();
+    }
     if (!active && state.pollTimer) {
         clearInterval(state.pollTimer);
         state.pollTimer = null;
@@ -215,6 +267,37 @@ async function pollTask(forceTaskId) {
     updateTaskUI(data.task);
     if (['completed', 'failed', 'cancelled'].includes(data.task.status)) {
         await loadBootstrap();
+    }
+}
+
+async function restoreActiveTask() {
+    const savedTaskId = loadActiveTaskId();
+    if (!savedTaskId) return;
+    try {
+        resetConsole();
+        state.taskId = savedTaskId;
+        await pollTask(savedTaskId);
+        const active = els.cancelBtn.disabled === false;
+        if (active) {
+            appendLog({
+                ts: new Date().toLocaleTimeString('zh-CN', { hour12: false }),
+                level: 'info',
+                message: '[系统] 已恢复正在运行的注册任务',
+            });
+            if (state.pollTimer) clearInterval(state.pollTimer);
+            state.pollTimer = setInterval(() => pollTask().catch(handleError), 1500);
+        } else {
+            appendLog({
+                ts: new Date().toLocaleTimeString('zh-CN', { hour12: false }),
+                level: 'info',
+                message: '[系统] 已恢复最近一次任务状态',
+            });
+        }
+    } catch (error) {
+        clearActiveTaskId();
+        resetTaskUI('[系统] 未找到正在运行的注册任务，监控台已重置');
+        window.UI?.toast('任务已失效，监控台已重置。', 'warning');
+        console.warn('restore active task failed', error);
     }
 }
 
@@ -245,6 +328,7 @@ async function startTask(event) {
         saveFormState();
         const data = await api('/api/registration/start', { method: 'POST', body: JSON.stringify(payload) });
         state.taskId = data.task_id;
+        saveActiveTaskId(data.task_id);
         state.renderedLogs = 0;
         await pollTask(data.task_id);
         if (state.pollTimer) clearInterval(state.pollTimer);
@@ -279,4 +363,6 @@ els.refreshAccountsBtn.addEventListener('click', () => loadBootstrap().catch(han
     els.form.addEventListener(eventName, () => saveFormState());
 });
 
-loadBootstrap().catch(handleError);
+loadBootstrap()
+    .then(() => restoreActiveTask())
+    .catch(handleError);
