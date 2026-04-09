@@ -336,7 +336,7 @@ class TutaCryptoCore:
 
     @staticmethod
     def _generate_kyber_keypair_raw() -> Tuple[bytes, bytes]:
-        """生成 Kyber-1024 原始公私钥 (1568/3168). 若无 oqs 则回退随机字节"""
+        """生成 Kyber-1024 原始公私钥 (1568/3168). 若本机依赖缺失则直接失败"""
         try:
             import oqs  # type: ignore
             if hasattr(oqs, "KeyEncapsulation"):
@@ -368,8 +368,11 @@ class TutaCryptoCore:
         except Exception as e:
             if not TutaCryptoCore._KYBER_WARNED:
                 TutaCryptoCore._KYBER_WARNED = True
-                print(f"[Crypto] Kyber 生成失败，使用随机字节占位: {e}")
-            return os.urandom(1568), os.urandom(3168)
+                print(f"[Crypto] Kyber 生成失败，终止注册: {e}")
+            raise RuntimeError(
+                "Kyber key generation failed. Registration is aborted to avoid creating unusable accounts. "
+                f"Details: {e}"
+            ) from e
 
     @staticmethod
     def generate_registration_payload(
