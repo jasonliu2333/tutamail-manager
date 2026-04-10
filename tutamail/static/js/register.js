@@ -269,7 +269,8 @@ async function renderTaskLogs(logs) {
     }
 }
 
-async function updateTaskUI(task) {
+async function updateTaskUI(task, options = {}) {
+    const skipHistoricalLogs = Boolean(options.skipHistoricalLogs);
     els.statusGrid.classList.remove('hidden');
     els.progressBlock.classList.remove('hidden');
     els.taskIdLabel.textContent = task.id;
@@ -282,7 +283,11 @@ async function updateTaskUI(task) {
     els.progressFill.style.width = `${percent}%`;
     setBadge(task.status);
 
-    await renderTaskLogs(task.logs || []);
+    if (skipHistoricalLogs) {
+        state.renderedLogs = (task.logs || []).length;
+    } else {
+        await renderTaskLogs(task.logs || []);
+    }
 
     const active = task.status === 'pending' || task.status === 'running';
     els.startBtn.disabled = active;
@@ -301,7 +306,7 @@ async function updateTaskUI(task) {
     }
 }
 
-async function pollTask(forceTaskId) {
+async function pollTask(forceTaskId, options = {}) {
     const taskId = forceTaskId || state.taskId;
     if (!taskId || state.pollInFlight) return;
     state.pollInFlight = true;
@@ -309,7 +314,7 @@ async function pollTask(forceTaskId) {
         console.debug('[register] pollTask', { taskId, forceTaskId: Boolean(forceTaskId) });
         const data = await api(`/api/registration/tasks/${taskId}`, { timeoutMs: 8000 });
         state.taskId = taskId;
-        await updateTaskUI(data.task);
+        await updateTaskUI(data.task, options);
         if (['completed', 'failed', 'cancelled'].includes(data.task.status)) {
             appendSystemLog(`[系统] 任务轮询结束，状态=${data.task.status}`, data.task.status === 'completed' ? 'success' : 'warning');
             await loadBootstrap();
@@ -326,8 +331,9 @@ async function restoreActiveTask() {
         resetConsole();
         appendSystemLog(`[系统] 检测到活动任务 ${savedTaskId}，尝试恢复监控台`, 'info');
         state.taskId = savedTaskId;
-        await pollTask(savedTaskId);
+        await pollTask(savedTaskId, { skipHistoricalLogs: true });
         const active = els.cancelBtn.disabled === false;
+        appendSystemLog('[系统] 历史日志请查看 register_tasks.log，页面仅从当前任务状态继续显示。', 'info');
         if (active) {
             appendSystemLog('[系统] 已恢复正在运行的注册任务', 'info');
             if (state.pollTimer) clearInterval(state.pollTimer);
