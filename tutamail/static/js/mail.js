@@ -220,6 +220,39 @@ function notify(message) {
     window.UI?.toast(message, 'info');
 }
 
+async function copyText(value) {
+    const text = String(value || '');
+    if (!text) return false;
+    if (navigator.clipboard?.writeText) {
+        try {
+            await navigator.clipboard.writeText(text);
+            return true;
+        } catch (_error) {
+            // fallback below
+        }
+    }
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', 'readonly');
+    textarea.style.position = 'fixed';
+    textarea.style.top = '-1000px';
+    textarea.style.left = '-1000px';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.focus();
+    textarea.select();
+    textarea.setSelectionRange(0, text.length);
+    let copied = false;
+    try {
+        copied = Boolean(document.execCommand && document.execCommand('copy'));
+    } catch (_error) {
+        copied = false;
+    } finally {
+        textarea.remove();
+    }
+    return copied;
+}
+
 function openModal(modal) {
     modal.classList.add('active');
 }
@@ -1839,11 +1872,11 @@ els.exportFilteredAccountsBtn?.addEventListener('click', exportFilteredAccounts)
 els.currentAccountBanner?.addEventListener('click', async () => {
     const email = state.selectedAccountEmail;
     if (!email) return;
-    try {
-        await navigator.clipboard.writeText(email);
+    const copied = await copyText(email);
+    if (copied) {
         notify(`已复制邮箱：${email}`);
-    } catch (_error) {
-        notify('复制失败，请检查浏览器权限');
+    } else {
+        notify(`复制失败，请手动复制：${email}`);
     }
 });
 
